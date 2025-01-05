@@ -17,4 +17,4 @@ val write_file: path -> string graph -> unit
    https://algorithms.discrete.ma.tum.de/graph-algorithms/flow-ford-fulkerson/index_en.html
 *)
 
-val export: string graph -> path -> unit
+val export: 'a graph -> string -> unit

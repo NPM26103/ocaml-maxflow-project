@@ -1,14 +1,14 @@
 open Graph
 open Gfile
-open Tools
 open Printf
+
+type flot = { 
+  capa : int;
+  flot : int
+}
 
 module IntMap = Map.Make(struct type t = id let compare = compare end)
 module IntSet = Set.Make(struct type t = id let compare = compare end)
-
-let init (gr: int graph) : int graph =
-  let temp gr arc1 = add_arc gr arc1.tgt arc1.src 0 in
-  e_fold gr temp gr
 
 let create_flot_graph (graph: int graph) : flot graph = 
   gmap graph (fun lbl -> { capa = lbl; flot = 0 })
@@ -64,6 +64,13 @@ let find_path_gr (graph: flot graph) (source: id) (destination: id) : id list op
   in
   bfs [source] (IntSet.singleton source) IntMap.empty
 
+let add_flot_arc (gr: flot graph) (id1: id) (id2: id) (f: flot) : flot graph =
+  match find_arc gr id1 id2 with
+  | Some x ->
+      let updated_flot = {capa = x.lbl.capa; flot = x.lbl.flot + f.flot} in
+      new_arc gr { src = x.src; tgt = x.tgt; lbl = updated_flot }
+  | None -> new_arc gr {src = id1; tgt = id2; lbl = f}
+
 let process_path (graph: flot graph) (path: id list) : flot graph * int =
   let min_val = 
     List.fold_left (fun acc (src, tgt) ->
@@ -76,37 +83,17 @@ let process_path (graph: flot graph) (path: id list) : flot graph * int =
       match find_arc g src tgt with
       | Some arc ->
         let new_flot = arc.lbl.flot + min_val in
-        add_arc g src tgt { capa = arc.lbl.capa; flot = new_flot }
+        add_flot_arc g src tgt {capa = arc.lbl.capa; flot = new_flot}
       | None -> g
     ) graph (List.combine (List.rev (List.tl (List.rev path))) (List.tl path))
   in (updated_graph, min_val)
 
-let ford_fulkerson (gr: int graph) (source: id) (destination: id) : unit =
-  let initialized_graph = init gr in
-  let flot_graph = create_flot_graph initialized_graph in
-  let export_flot_graph (graph: flot graph) (filename: string) : unit =
-    let string_of_flot arc =
-      sprintf "%d/%d" arc.lbl.flot arc.lbl.capa
-    in export (gmap graph (fun arc -> string_of_flot arc)) filename
-  in export_flot_graph flot_graph "Graph_initial";
-  
-  let residual_graph = graph_residual flot_graph in
-  let rec loop graph max_flow =
-  match find_path_gr graph source destination with
-    | None -> max_flow
-    | Some path ->
-      let (updated_graph, flow) = process_path graph path in
-      loop updated_graph (max_flow + flow)
-    in let final_flow = loop residual_graph 0 in
-  
-  export (gmap residual_graph (fun arc -> string_of_int arc.lbl.capa)) "Graph_residual_final";
-  
-  let final_graph = 
-    e_fold gr (fun g arc ->
-      match find_arc residual_graph arc.src arc.tgt with
-      | Some res_arc -> 
-        add_arc g arc.src arc.tgt (arc.lbl - res_arc.lbl.capa)
-      | None -> g
-    ) flot_graph
-  in
-  export_flot_graph final_graph "Graph_final"
+  let ford_fulkerson (gr : int graph) (source : id) (destination : id) : flot graph * int =
+    let flot_graph = create_flot_graph gr in
+    let rec loop graph total_flow =
+      match find_path_gr graph source destination with
+      | None -> (graph, total_flow)
+      | Some path ->
+          let (updated_graph, flow) = process_path graph path in
+          loop updated_graph (total_flow + flow)
+    in loop flot_graph 0
