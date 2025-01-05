@@ -114,7 +114,7 @@ let from_file path =
   
 let export gr path = 
   let f = open_out path in
-  fprintf f " dirgraph G {
+  fprintf f " digraph G {
   rankdir=LR;
   node [shape=circle];";
   e_iter gr (fun (arc) -> fprintf f "  %d -> %d [label=\"%s\"];\n" arc.src arc.tgt arc.lbl);
