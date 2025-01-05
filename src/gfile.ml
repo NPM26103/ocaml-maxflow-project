@@ -112,3 +112,12 @@ let from_file path =
   close_in infile ;
   final_graph
   
+let export gr path = 
+  let f = open_out path in
+  fprintf f " dirgraph G {
+  rankdir=LR;
+  node [shape=circle];";
+  e_iter gr (fun (arc) -> fprintf f "  %d -> %d [label=\"%s\"];\n" arc.src arc.tgt arc.lbl);
+  fprintf f "}\n";
+  close_out f;
+  ();;

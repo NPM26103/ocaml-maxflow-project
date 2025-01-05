@@ -1,7 +1,7 @@
 open Graph
 
 let clone_nodes (gr: 'a graph) : 'b graph = 
-  n_fold gr new_node empty_graph
+  n_fold gr (fun gr' id -> new_node gr' id)) empty_graph
 
 let gmap (gr: 'a graph) (f: 'a -> 'b) : 'b graph =
   e_fold gr (fun g src tgt lbl -> new_arc g src tgt (f lbl)) (clone_nodes gr)
