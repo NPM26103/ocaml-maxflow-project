@@ -10,9 +10,7 @@ build:
 	@echo "\n   🚨  COMPILING  🚨 \n"
 	dune build src/ftest.exe
 	ls src/*.exe > /dev/null && ln -fs src/*.exe .
-	dune build src/test_bipartite.exe
-	ls src/*.exe > /dev/null && ln -fs src/*.exe .
-
+	
 format:
 	ocp-indent --inplace src/*
 

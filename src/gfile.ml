@@ -83,42 +83,39 @@ let from_file path =
   let infile = open_in path in
 
   (* Read all lines until end of file. *)
-  let rec loop graph =
-    try
-      let line = input_line infile in
+let rec loop graph =
+  try
+    let line = input_line infile in
 
-      (* Remove leading and trailing spaces. *)
-      let line = String.trim line in
+    (* Remove leading and trailing spaces. *)
+    let line = String.trim line in
 
-      let graph2 =
-        (* Ignore empty lines *)
-        if line = "" then graph
+    let graph2 =
+      (* Ignore empty lines *)
+      if line = "" then graph
 
-        (* The first character of a line determines its content : n or e. *)
-        else match line.[0] with
-          | 'n' -> read_node graph line
-          | 'e' -> read_arc graph line
+      (* The first character of a line determines its content : n or e. *)
+      else match line.[0] with
+        | 'n' -> read_node graph line
+        | 'e' -> read_arc graph line
 
-          (* It should be a comment, otherwise we complain. *)
-          | _ -> read_comment graph line
-      in      
-      loop graph2
+        (* It should be a comment, otherwise we complain. *)
+        | _ -> read_comment graph line
+    in      
+    loop graph2
 
-    with End_of_file -> graph (* Done *)
-  in
+  with End_of_file -> graph (* Done *)
+in
 
-  let final_graph = loop empty_graph in
-  
-  close_in infile ;
-  final_graph
-  
-let export (gr : 'a graph) (path : string) : unit =
-  let f = open_out path in
-  fprintf f "
-  digraph G {
+let final_graph = loop empty_graph in
+
+close_in infile ;
+final_graph
+
+let export path gr =
+  let f = open_out path in 
+  fprintf f " digraph G { 
   rankdir=LR;
-  node [shape=circle];";
-  e_iter gr (fun arc -> fprintf f "  %d -> %d [label=\"%s\"];\n" arc.src arc.tgt (string_of_int arc.lbl));
-  fprintf f "}\n";
-  close_out f;
-  ();;
+  node [shape = circle];\n" ;
+  e_iter gr (fun arc -> fprintf f "%d -> %d [label=\"%s\"];\n" arc.src arc.tgt arc.lbl);
+  fprintf f "} \n" ;

@@ -1,5 +1,7 @@
 open Gfile
-    
+open Ford_fulkerson
+open Tools
+
 let () =
 
   (* Check the number of command-line arguments *)
@@ -18,16 +20,17 @@ let () =
   (* Arguments are : infile(1) source-id(2) sink-id(3) outfile(4) *)
   
   let infile = Sys.argv.(1)
-  (* and outfile = Sys.argv.(4) *)
+  and outfile = Sys.argv.(4)
   
   (* These command-line arguments are not used for the moment. *)
   and _source = int_of_string Sys.argv.(2)
   and _sink = int_of_string Sys.argv.(3)
   in
-
+  
   (* Open file *)
-  let graph = from_file infile in
-  export graph "graph";
-
-  ()
-
+ let graph = from_file infile in
+ (* For testing just the algorithm *)
+ let graph2 = ford_fulkerson (gmap graph  (fun x -> int_of_string x)) _source _sink  in
+ let () = write_file outfile graph2 in
+ export "answer" graph2;
+()

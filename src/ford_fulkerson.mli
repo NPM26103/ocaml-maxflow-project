@@ -1,30 +1,13 @@
 open Graph
 
-type flot = { 
-  capa : int;
-  flot : int
-}
+type paths = id list
 
-val create_flot_graph : id graph -> flot graph
+val find_path : int graph -> int list -> id -> id -> paths option
 
-(* Compute residual capacity for an edge *)
-val arcs_residual : flot arc -> flot graph -> flot arc * flot arc
+val max_flow_path : int graph -> int -> paths -> int
 
-(* Build residual graph *)
-val graph_residual : flot graph -> flot graph
+val modify_flow : int graph -> int -> paths -> int graph
 
-(* Check if an edge has positive residual capacity *)
-val arc_valid : flot arc -> bool
+val inter_residuel_graph : int graph -> int graph -> string graph
 
-(* Find path using BFS in residual graph *)
-val find_path_gr : flot graph -> id -> id -> id list option
-
-(* Adds a new edge or updates an existing edge in the flot graph *)
-val add_flot_arc : flot graph -> id -> id -> flot -> flot graph
-
-(* Find minimum path capacity and update flow *)
-val process_path : flot graph -> id list -> flot graph * int
-
-val export_flot_graph : flot graph -> string -> unit
-
-val ford_fulkerson : id graph -> id -> id -> unit
+val ford_fulkerson : int graph -> id -> id -> string graph

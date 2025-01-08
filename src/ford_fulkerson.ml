@@ -1,99 +1,74 @@
 open Graph
-open Gfile
-open Printf
+open Tools
 
-type flot = { 
-  capa : int;
-  flot : int
-}
+type paths = id list
 
-module IntMap = Map.Make(struct type t = id let compare = compare end)
-module IntSet = Set.Make(struct type t = id let compare = compare end)
+let rec find_path gr visited id1 id2 =
+  if id1 = id2 then Some [id1]
+  else
+    let out_arcs_node = out_arcs gr id1 in
 
-let create_flot_graph (graph: int graph) : flot graph = 
-  gmap graph (fun lbl -> { capa = lbl; flot = 0 })
+    let rec is_visited x = function
+      | [] -> false
+      | a :: _ when x = a -> true
+      | _ :: rest -> is_visited x rest
+    in
 
-let arcs_residual (arc: flot arc) (graph: flot graph) : (flot arc * flot arc) =
-  let capa = arc.lbl.capa in
-  let flot = arc.lbl.flot in
-  let residual = capa - flot in
-  match find_arc graph arc.tgt arc.src with
-  | None -> 
-    ({ src = arc.src; tgt = arc.tgt; lbl = { capa = residual; flot = flot } },
-     { src = arc.tgt; tgt = arc.src; lbl = { capa = flot; flot = 0 } })
-  | Some x -> 
-    ({ src = arc.src; tgt = arc.tgt; lbl = { capa = residual + x.lbl.flot; flot = flot } },
-     { src = arc.tgt; tgt = arc.src; lbl = { capa = x.lbl.capa - x.lbl.flot + flot; flot = 0 } })
-
-let graph_residual (graph: flot graph) : flot graph =
-  let new_graph = clone_nodes graph in
-  e_fold graph (fun g arc -> 
-    let (arc1, arc2) = arcs_residual arc graph in
-    new_arc (new_arc g arc1) arc2
-  ) new_graph
-
-let arc_valid (arc: flot arc) : bool =
-  arc.lbl.capa > 0
-
-let find_path_gr (graph: flot graph) (source: id) (destination: id) : id list option =
-  let rec bfs queue visited parents =
-    match queue with
+    let rec arcs_route = function
+      | [] -> []
+      | { src = _; tgt = dst; lbl = vl } :: rest ->
+          if is_visited dst visited || vl <= 0 then arcs_route rest
+          else dst :: arcs_route rest
+    in
+    match arcs_route out_arcs_node with
     | [] -> None
-    | node :: rest ->
-      if node = destination then
-        let rec build_path current acc =
-          if current = source then source :: acc
-          else
-            match IntMap.find_opt current parents with
-            | Some parent -> build_path parent (current :: acc)
-            | None -> []
-        in
-        let path = build_path destination [] in
-        Some path
-      else
-        let out_arcs = out_arcs graph node in
-        let neighbors = 
-          out_arcs
-          |> List.filter arc_valid
-          |> List.map (fun arc -> arc.tgt)
-        in
-        let new_neighbors = List.filter (fun n -> not (IntSet.mem n visited)) neighbors in
-        let new_visited = List.fold_left (fun acc n -> IntSet.add n acc) visited new_neighbors in
-        let new_parents = List.fold_left (fun acc n -> IntMap.add n node acc) parents new_neighbors in
-        bfs (rest @ new_neighbors) new_visited new_parents
+    | x :: _ ->
+        match find_path gr (x :: visited) x id2 with
+        | None -> find_path gr (x :: visited) id1 id2
+        | Some liste -> Some (id1 :: liste)
+
+;;
+
+let rec max_flow_path gr max = function
+  | [] -> max
+  | _ :: [] -> max
+  | nd1 :: nd2 :: rest ->
+      match find_arc gr nd1 nd2 with
+      | None -> 0
+      | Some arc -> max_flow_path gr (min max arc.lbl) (nd2 :: rest)
+;;
+
+let rec modify_flow gr n = function
+  | [] -> gr
+  | _ :: [] -> gr
+  | nd1 :: nd2 :: rest -> modify_flow (add_arc gr nd1 nd2 (-n)) n (nd2 :: rest)
+;;
+
+let inter_residuel_graph grapho resd_graph =
+  let graphn = clone_nodes grapho in
+  let f graphvide { src = id1; tgt = id2; lbl = id } =
+    let v =
+      match find_arc resd_graph id1 id2 with
+      | None -> raise (Failure "Error")
+      | Some z -> z
+    in
+    new_arc graphvide { src = id1; tgt = id2; lbl = (string_of_int (id - v.lbl) ^ "/" ^ string_of_int id) }
   in
-  bfs [source] (IntSet.singleton source) IntMap.empty
+  e_fold grapho f graphn
+;;
 
-let add_flot_arc (gr: flot graph) (id1: id) (id2: id) (f: flot) : flot graph =
-  match find_arc gr id1 id2 with
-  | Some x ->
-      let updated_flot = {capa = x.lbl.capa; flot = x.lbl.flot + f.flot} in
-      new_arc gr { src = x.src; tgt = x.tgt; lbl = updated_flot }
-  | None -> new_arc gr {src = id1; tgt = id2; lbl = f}
+let ford_fulkerson graph id1 id2 =
+  let rec loop l_graph id1 id2 =
+    let max = 500 in
+    let visited = [] in
+    let path = find_path l_graph visited id1 id2 in
 
-let process_path (graph: flot graph) (path: id list) : flot graph * int =
-  let min_val = 
-    List.fold_left (fun acc (src, tgt) ->
-      match find_arc graph src tgt with
-      | Some arc -> min acc arc.lbl.capa
-      | None -> acc
-    ) max_int (List.combine (List.rev (List.tl (List.rev path))) (List.tl path))
-    in let updated_graph =
-    List.fold_left (fun g (src, tgt) ->
-      match find_arc g src tgt with
-      | Some arc ->
-        let new_flot = arc.lbl.flot + min_val in
-        add_flot_arc g src tgt {capa = arc.lbl.capa; flot = new_flot}
-      | None -> g
-    ) graph (List.combine (List.rev (List.tl (List.rev path))) (List.tl path))
-  in (updated_graph, min_val)
-
-  let ford_fulkerson (gr : int graph) (source : id) (destination : id) : flot graph * int =
-    let flot_graph = create_flot_graph gr in
-    let rec loop graph total_flow =
-      match find_path_gr graph source destination with
-      | None -> (graph, total_flow)
-      | Some path ->
-          let (updated_graph, flow) = process_path graph path in
-          loop updated_graph (total_flow + flow)
-    in loop flot_graph 0
+    match path with
+    | None -> inter_residuel_graph graph l_graph
+    | Some list ->
+        let flow = max_flow_path l_graph max list in
+        let modified_resid_graph = modify_flow l_graph flow list in
+        loop modified_resid_graph id1 id2
+  in
+  loop graph id1 id2
+;;

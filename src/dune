@@ -5,11 +5,3 @@
  ;; (flags (:standard -w -6))
  ;; Link to executable in main dir
  (promote (until-clean)))
-
-(executable
- (name test_bipartite)
- ;; (libraries )
- ;; Disable some warnings
- ;; (flags (:standard -w -6))
- ;; Link to executable in main dir
- (promote (until-clean)))
