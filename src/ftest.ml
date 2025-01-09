@@ -29,8 +29,7 @@ let () =
   
   (* Open file *)
  let graph = from_file infile in
- (* For testing just the algorithm *)
- let graph2 = ford_fulkerson (gmap graph  (fun x -> int_of_string x)) _source _sink  in
+ let graph2 = ford_fulkerson (gmap graph  (fun x -> int_of_string x)) _source _sink in
  let () = write_file outfile graph2 in
- export "answer" graph2;
+ export "answer_graph" graph2;
 ()
