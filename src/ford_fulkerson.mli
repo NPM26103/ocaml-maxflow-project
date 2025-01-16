@@ -2,13 +2,13 @@ open Graph
 
 type paths = id list
 
-(* Find path using DFS *)
-val find_path : int graph -> int list -> id -> id -> paths option
+(* Find path using BFS *)
+val find_path : int graph -> id -> id -> paths option
 
 (* Find the minimum capacity along the path *)
 val max_flow_path : int graph -> int -> paths -> int
 
-(* Update flow *)
+(* Update flow and residual graph *)
 val modify_flow : int graph -> int -> paths -> int graph
 
 (* Create residual graph *)
